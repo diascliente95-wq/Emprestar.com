@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+htt<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
@@ -50,7 +50,7 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
         }
         .relogio {
@@ -72,6 +72,33 @@
             font-weight: 600;
             font-size: 14px;
             border: 1px solid #fecaca;
+        }
+        .btn-atualizar {
+            background: #e0e7ff;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #3730a3;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #c7d2fe;
+        }
+        .btn-atualizar:hover {
+            background: #c7d2fe;
+            transform: scale(1.02);
+        }
+        .btn-atualizar:active {
+            transform: scale(0.95);
+        }
+        .versao {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-left: 4px;
         }
 
         /* ── Tabs ── */
@@ -422,6 +449,10 @@
                 font-size: 15px;
                 padding: 4px 14px;
             }
+            .btn-atualizar {
+                font-size: 12px;
+                padding: 4px 12px;
+            }
         }
         @media (max-width: 480px) {
             .form-row {
@@ -554,6 +585,9 @@
             <h1>💰 Empréstimos <span>· 30%</span></h1>
             <div class="header-right">
                 <div class="relogio" id="relogio">00:00:00</div>
+                <button class="btn-atualizar" id="btnAtualizar" title="Verificar atualizações e recarregar">
+                    🔄 Atualizar <span class="versao">v1.3</span>
+                </button>
                 <span class="badge-juros">📈 Juros fixos 30%</span>
             </div>
         </header>
@@ -658,6 +692,11 @@
 
     <script>
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  VERSÃO DO APLICATIVO
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const APP_VERSION = '1.3';
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  DADOS DO PIX (centralizado)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const PIX_INFO = {
@@ -685,9 +724,9 @@
                     // Garantir que registros antigos tenham campo vencimento
                     emprestimos = emprestimos.map(e => {
                         if (!e.vencimento) {
-                            // Calcular vencimento a partir da data
                             e.vencimento = dataVencimentoCalculado(e.data);
                         }
+                        if (e.juros === undefined) e.juros = 0.30;
                         return e;
                     });
                 } catch {
@@ -776,7 +815,6 @@
             return d.toISOString().split('T')[0];
         }
 
-        // Retorna a data de vencimento do empréstimo (se tiver, senão calcula)
         function obterVencimento(emp) {
             return emp.vencimento || dataVencimentoCalculado(emp.data);
         }
@@ -821,7 +859,6 @@
                 return;
             }
 
-            // Ordenar por vencimento (mais próximo primeiro)
             ativos.sort((a, b) => {
                 const vA = obterVencimento(a);
                 const vB = obterVencimento(b);
@@ -1023,6 +1060,16 @@
             }
         }
 
+        // ── FUNÇÃO DE ATUALIZAÇÃO ──
+        function atualizarApp() {
+            // Recarrega os dados do localStorage e renderiza
+            carregarDados();
+            renderizar();
+            mostrarToast(`🔄 Aplicativo atualizado! (v${APP_VERSION})`);
+            // Opcional: forçar recarga da página para limpar cache
+            // window.location.reload(); // Descomente se quiser recarga total
+        }
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  TOAST
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1072,6 +1119,9 @@
 
         document.getElementById('limparTodosFinalizados').addEventListener('click', limparTodosFinalizados);
 
+        // ── Evento do botão atualizar ──
+        document.getElementById('btnAtualizar').addEventListener('click', atualizarApp);
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  FORM
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1088,7 +1138,6 @@
                 return;
             }
 
-            // Se vencimento não preenchido, calcular automaticamente
             let vencFinal = vencimento;
             if (!vencFinal) {
                 vencFinal = dataVencimentoCalculado(data);
@@ -1109,7 +1158,6 @@
             salvarDados();
             renderizar();
 
-            // Limpar form
             document.getElementById('inputNome').value = '';
             document.getElementById('inputValor').value = '';
             document.getElementById('inputData').value = '';
@@ -1118,7 +1166,6 @@
             mostrarToast(`✅ Empréstimo de ${formatarMoeda(valor)} para ${nome} adicionado!`);
         });
 
-        // ── Setar data padrão ──
         document.getElementById('inputData').value = hoje();
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1127,17 +1174,15 @@
         carregarDados();
         renderizar();
 
-        // Garantir que todos tenham campo vencimento
+        // Garantir consistência
         emprestimos = emprestimos.map(e => {
-            if (!e.vencimento) {
-                e.vencimento = dataVencimentoCalculado(e.data);
-            }
+            if (!e.vencimento) e.vencimento = dataVencimentoCalculado(e.data);
             if (e.juros === undefined) e.juros = 0.30;
             return e;
         });
         salvarDados();
 
-        console.log('💰 Painel de Empréstimos carregado!');
+        console.log(`💰 Painel de Empréstimos v${APP_VERSION} carregado!`);
         console.log(`📊 ${emprestimos.filter(e => !e.pago).length} ativos, ${emprestimos.filter(e => e.pago).length} finalizados.`);
         console.log('💳 Pix configurado:', PIX_INFO);
     </script>
