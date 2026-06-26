@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>💰 Painel de Empréstimos - 30% Juros</title>
+    <style>
+        /* ── Reset & Base ── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f4f7fc;
+            color: #1e293b;
+            padding: 24px 16px 40px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .app {
+            max-width: 820px;
+            width: 100%;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #0b3b5c, #1a7a5a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header h1 span {
+            font-weight: 300;
+            -webkit-text-fill-color: #94a3b8;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .relogio {
+            font-size: 18px;
+            font-weight: 500;
+            background: #eef2f6;
+            padding: 6px 18px;
+            border-radius: 40px;
+            color: #0b3b5c;
+            letter-spacing: 1px;
+            border: 1px solid #dce1e9;
+            font-variant-numeric: tabular-nums;
+        }
+        .badge-juros {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #fecaca;
+        }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            gap: 6px;
+            background: #e9edf2;
+            padding: 4px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+        }
+        .tab-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 12px 8px;
+            border-radius: 11px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #475569;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .tab-btn.active {
+            background: #ffffff;
+            color: #0b3b5c;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .tab-btn:hover:not(.active) {
+            background: #dce1e9;
+        }
+        .tab-btn .count {
+            background: #cbd5e1;
+            color: #1e293b;
+            font-size: 12px;
+            padding: 1px 10px;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+        .tab-btn.active .count {
+            background: #0b3b5c;
+            color: #fff;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px 22px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            margin-bottom: 24px;
+            border: 1px solid #eef2f6;
+            transition: 0.2s;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .card-title i {
+            font-size: 20px;
+        }
+        .card-title .btn-sm {
+            margin-left: auto;
+        }
+
+        /* ── Form ── */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            gap: 14px;
+            align-items: end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+            letter-spacing: 0.2px;
+        }
+        .form-group input {
+            padding: 12px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #fafcff;
+            transition: 0.2s;
+            width: 100%;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: #1a7a5a;
+            box-shadow: 0 0 0 3px rgba(26, 122, 90, 0.12);
+            background: #fff;
+        }
+        .btn-primary {
+            background: #0b3b5c;
+            color: #fff;
+            border: none;
+            padding: 12px 26px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary:hover {
+            background: #0a2f4a;
+            transform: scale(1.01);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        /* ── Lista de empréstimos ── */
+        .loan-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 12px 20px;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .loan-item:last-child {
+            border-bottom: none;
+        }
+        .loan-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .loan-info .name {
+            font-weight: 600;
+            font-size: 17px;
+            color: #0f172a;
+        }
+        .loan-info .meta {
+            font-size: 13px;
+            color: #64748b;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+        }
+        .loan-info .meta .tag {
+            background: #f1f5f9;
+            padding: 1px 10px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+        .loan-info .meta .tag.juros {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .loan-info .meta .tag.pago {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .loan-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .btn-sm:hover {
+            background: #e2e8f0;
+        }
+        .btn-sm.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .btn-sm.success:hover {
+            background: #bbf7d0;
+        }
+        .btn-sm.danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .btn-sm.danger:hover {
+            background: #fecaca;
+        }
+        .btn-sm.whatsapp {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .btn-sm.whatsapp:hover {
+            background: #a7f3d0;
+        }
+        .btn-sm.txt {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .btn-sm.txt:hover {
+            background: #c7d2fe;
+        }
+        .btn-sm.limpar {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .btn-sm.limpar:hover {
+            background: #fee2e2;
+        }
+
+        .loan-total {
+            font-weight: 700;
+            font-size: 16px;
+            color: #0b3b5c;
+            text-align: right;
+            min-width: 80px;
+        }
+        .loan-total .sub {
+            font-weight: 400;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .vazio {
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px 0 20px;
+            font-size: 15px;
+        }
+        .vazio i {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 12px;
+            opacity: 0.4;
+        }
+
+        /* ── Atalhos duplos ── */
+        .atalhos {
+            display: flex;
+            gap: 14px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .atalho-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            font-weight: 600;
+            font-size: 15px;
+            color: #0b3b5c;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .atalho-btn:hover {
+            background: #eef2f6;
+            border-color: #0b3b5c;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
+        }
+        .atalho-btn .icon {
+            font-size: 22px;
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 14px 32px;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+            z-index: 999;
+        }
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 700px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+            }
+            .form-row .btn-primary {
+                grid-column: span 2;
+                justify-content: center;
+            }
+            .loan-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .loan-total {
+                text-align: left;
+                min-width: unset;
+            }
+            .loan-actions {
+                justify-content: flex-start;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .relogio {
+                font-size: 15px;
+                padding: 4px 14px;
+            }
+        }
+        @media (max-width: 480px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .form-row .btn-primary {
+                grid-column: span 1;
+            }
+            .tabs .tab-btn {
+                font-size: 13px;
+                padding: 10px 4px;
+            }
+            .card {
+                padding: 18px 14px;
+            }
+        }
+
+        /* ── Scroll ── */
+        .lista-scroll {
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .lista-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .lista-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* ── Separador ── */
+        .hr-text {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 18px 0 14px;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .hr-text::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .data-destaque {
+            background: #fef9c3;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #854d0e;
+        }
+        .data-vencido {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ── Botão limpar todos ── */
+        .limpar-todos {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .limpar-todos:hover {
+            background: #fee2e2;
+            border-color: #f87171;
+        }
+
+        /* ── Informação do Pix no rodapé ── */
+        .pix-info {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 14px;
+            padding: 14px 20px;
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 28px;
+            font-size: 14px;
+            color: #166534;
+        }
+        .pix-info strong {
+            font-weight: 600;
+        }
+        .pix-info .pix-chave {
+            background: #dcfce7;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+        .pix-info .pix-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        @media (max-width: 480px) {
+            .pix-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+        }
+
+        /* ── Ajuste para o campo vencimento ── */
+        .form-group .helper {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app" id="app">
+        <!-- HEADER -->
+        <header class="header">
+            <h1>💰 Empréstimos <span>· 30%</span></h1>
+            <div class="header-right">
+                <div class="relogio" id="relogio">00:00:00</div>
+                <span class="badge-juros">📈 Juros fixos 30%</span>
+            </div>
+        </header>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="ativos" id="tabAtivos">
+                📋 Ativos <span class="count" id="countAtivos">0</span>
+            </button>
+            <button class="tab-btn" data-tab="finalizados" id="tabFinalizados">
+                ✅ Finalizados <span class="count" id="countFinalizados">0</span>
+            </button>
+        </div>
+
+        <!-- PAINEL ATIVOS -->
+        <div id="painelAtivos">
+            <!-- Form -->
+            <div class="card">
+                <div class="card-title">➕ Novo Empréstimo</div>
+                <form id="formEmprestimo" class="form-row">
+                    <div class="form-group">
+                        <label>👤 Nome</label>
+                        <input type="text" id="inputNome" placeholder="Ex: João Silva" required />
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Data</label>
+                        <input type="date" id="inputData" required />
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Vencimento</label>
+                        <input type="date" id="inputVencimento" />
+                        <span class="helper">Deixe em branco para +30 dias</span>
+                    </div>
+                    <div class="form-group">
+                        <label>💰 Valor (R$)</label>
+                        <input type="number" id="inputValor" placeholder="1000" step="0.01" min="0.01" required />
+                    </div>
+                    <button type="submit" class="btn-primary">➕ Adicionar</button>
+                </form>
+                <div style="margin-top:12px;font-size:13px;color:#64748b;">
+                    ⚡ Juros de 30% aplicados automaticamente. Total a pagar = valor × 1,30
+                </div>
+            </div>
+
+            <!-- Lista ativos -->
+            <div class="card">
+                <div class="card-title">📌 Empréstimos Ativos</div>
+                <div id="listaAtivos" class="lista-scroll">
+                    <!-- renderizado via JS -->
+                </div>
+                <!-- DOIS ATALHOS para a lista de finalizados -->
+                <div class="atalhos">
+                    <button class="atalho-btn" id="atalhoFinalizados1">
+                        <span class="icon">📋</span> Ver Finalizados
+                    </button>
+                    <button class="atalho-btn" id="atalhoFinalizados2">
+                        <span class="icon">✅</span> Pagamentos Encerrados
+                    </button>
+                </div>
+                <!-- Informação do Pix -->
+                <div class="pix-info">
+                    <span class="pix-label">💳 <strong>Pix para pagamento:</strong></span>
+                    <span><strong>Banco:</strong> PagSeguro</span>
+                    <span><strong>Nome:</strong> Diego Dias</span>
+                    <span class="pix-chave">🔑 91 98544-6070</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAINEL FINALIZADOS -->
+        <div id="painelFinalizados" style="display:none;">
+            <div class="card">
+                <div class="card-title">
+                    ✅ Pagamentos Finalizados
+                    <button class="limpar-todos" id="limparTodosFinalizados">🗑️ Limpar todos</button>
+                </div>
+                <div id="listaFinalizados" class="lista-scroll">
+                    <!-- renderizado via JS -->
+                </div>
+                <!-- DOIS ATALHOS para voltar aos ativos -->
+                <div class="atalhos">
+                    <button class="atalho-btn" id="atalhoVoltar1">
+                        <span class="icon">⬅️</span> Voltar aos Ativos
+                    </button>
+                    <button class="atalho-btn" id="atalhoVoltar2">
+                        <span class="icon">📊</span> Empréstimos Ativos
+                    </button>
+                </div>
+                <!-- Informação do Pix também aqui -->
+                <div class="pix-info">
+                    <span class="pix-label">💳 <strong>Pix para pagamento:</strong></span>
+                    <span><strong>Banco:</strong> PagSeguro</span>
+                    <span><strong>Nome:</strong> Diego Dias</span>
+                    <span class="pix-chave">🔑 91 98544-6070</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  DADOS DO PIX (centralizado)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const PIX_INFO = {
+            banco: 'PagSeguro',
+            nome: 'Diego Dias',
+            chave: '91 98544-6070'
+        };
+
+        function getPixTexto() {
+            return `💳 Pix para pagamento:\nBanco: ${PIX_INFO.banco}\nNome: ${PIX_INFO.nome}\nChave Pix 🔑: ${PIX_INFO.chave}`;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  DATA
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const STORAGE_KEY = 'emprestimos_data';
+
+        let emprestimos = [];
+
+        function carregarDados() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    emprestimos = JSON.parse(raw);
+                    // Garantir que registros antigos tenham campo vencimento
+                    emprestimos = emprestimos.map(e => {
+                        if (!e.vencimento) {
+                            // Calcular vencimento a partir da data
+                            e.vencimento = dataVencimentoCalculado(e.data);
+                        }
+                        return e;
+                    });
+                } catch {
+                    emprestimos = [];
+                }
+            } else {
+                // Dados de exemplo com vencimento manual
+                const hojeStr = hoje();
+                const vencEx1 = new Date();
+                vencEx1.setDate(vencEx1.getDate() + 30);
+                const vencEx2 = new Date();
+                vencEx2.setDate(vencEx2.getDate() + 15);
+                const vencEx3 = new Date();
+                vencEx3.setDate(vencEx3.getDate() - 5);
+
+                emprestimos = [{
+                    id: Date.now() - 100000,
+                    nome: 'Ana Oliveira',
+                    data: new Date(Date.now() - 15 * 86400000).toISOString().split('T')[0],
+                    vencimento: vencEx1.toISOString().split('T')[0],
+                    valor: 500,
+                    juros: 0.30,
+                    pago: false,
+                    dataPagamento: null,
+                }, {
+                    id: Date.now() - 50000,
+                    nome: 'Carlos Mendes',
+                    data: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+                    vencimento: vencEx2.toISOString().split('T')[0],
+                    valor: 1200,
+                    juros: 0.30,
+                    pago: false,
+                    dataPagamento: null,
+                }, {
+                    id: Date.now() - 200000,
+                    nome: 'Mariana Souza',
+                    data: new Date(Date.now() - 45 * 86400000).toISOString().split('T')[0],
+                    vencimento: vencEx3.toISOString().split('T')[0],
+                    valor: 800,
+                    juros: 0.30,
+                    pago: true,
+                    dataPagamento: new Date(Date.now() - 10 * 86400000).toISOString().split('T')[0],
+                }];
+            }
+            salvarDados();
+        }
+
+        function salvarDados() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(emprestimos));
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  HELPERS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function gerarId() {
+            return Date.now() + Math.random() * 1000;
+        }
+
+        function calcularTotal(valor, juros = 0.30) {
+            return valor * (1 + juros);
+        }
+
+        function formatarMoeda(v) {
+            return 'R$ ' + v.toFixed(2).replace('.', ',');
+        }
+
+        function formatarData(d) {
+            if (!d) return '—';
+            const partes = d.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        function hoje() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function diasAte(dataStr) {
+            const hojeMs = new Date(hoje()).getTime();
+            const dataMs = new Date(dataStr + 'T00:00:00').getTime();
+            return Math.ceil((dataMs - hojeMs) / (86400000));
+        }
+
+        function dataVencimentoCalculado(dataInicio) {
+            const d = new Date(dataInicio + 'T00:00:00');
+            d.setDate(d.getDate() + 30);
+            return d.toISOString().split('T')[0];
+        }
+
+        // Retorna a data de vencimento do empréstimo (se tiver, senão calcula)
+        function obterVencimento(emp) {
+            return emp.vencimento || dataVencimentoCalculado(emp.data);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  RELÓGIO
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function atualizarRelogio() {
+            const agora = new Date();
+            const horas = String(agora.getHours()).padStart(2, '0');
+            const minutos = String(agora.getMinutes()).padStart(2, '0');
+            const segundos = String(agora.getSeconds()).padStart(2, '0');
+            document.getElementById('relogio').textContent = `${horas}:${minutos}:${segundos}`;
+        }
+        setInterval(atualizarRelogio, 1000);
+        atualizarRelogio();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  RENDER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function renderizar() {
+            const ativos = emprestimos.filter(e => !e.pago);
+            const finalizados = emprestimos.filter(e => e.pago);
+
+            document.getElementById('countAtivos').textContent = ativos.length;
+            document.getElementById('countFinalizados').textContent = finalizados.length;
+
+            renderizarAtivos(ativos);
+            renderizarFinalizados(finalizados);
+        }
+
+        function renderizarAtivos(ativos) {
+            const container = document.getElementById('listaAtivos');
+            if (ativos.length === 0) {
+                container.innerHTML = `
+                    <div class="vazio">
+                        <i>📭</i>
+                        Nenhum empréstimo ativo.<br />
+                        Adicione um novo empréstimo acima.
+                    </div>
+                `;
+                return;
+            }
+
+            // Ordenar por vencimento (mais próximo primeiro)
+            ativos.sort((a, b) => {
+                const vA = obterVencimento(a);
+                const vB = obterVencimento(b);
+                return vA.localeCompare(vB);
+            });
+
+            let html = '';
+            for (const emp of ativos) {
+                const venc = obterVencimento(emp);
+                const dias = diasAte(venc);
+                const total = calcularTotal(emp.valor, emp.juros);
+
+                let statusData = '';
+                if (dias < 0) {
+                    statusData = `<span class="data-destaque data-vencido">⚠️ Vencido há ${Math.abs(dias)} dias</span>`;
+                } else if (dias <= 3) {
+                    statusData = `<span class="data-destaque">🔔 Vence em ${dias} dias</span>`;
+                } else {
+                    statusData = `<span style="color:#64748b;font-size:13px;">Vence em ${dias} dias</span>`;
+                }
+
+                html += `
+                    <div class="loan-item" data-id="${emp.id}">
+                        <div class="loan-info">
+                            <div class="name">${emp.nome}</div>
+                            <div class="meta">
+                                <span>📅 Início: ${formatarData(emp.data)}</span>
+                                <span>⏳ Venc: ${formatarData(venc)}</span>
+                                ${statusData}
+                                <span class="tag">Valor: ${formatarMoeda(emp.valor)}</span>
+                                <span class="tag juros">+30%: ${formatarMoeda(emp.valor * 0.30)}</span>
+                            </div>
+                        </div>
+                        <div class="loan-total">
+                            ${formatarMoeda(total)}
+                            <div class="sub">total a pagar</div>
+                        </div>
+                        <div class="loan-actions">
+                            <button class="btn-sm success" onclick="marcarPago('${emp.id}')">✅ Pagar</button>
+                            <button class="btn-sm whatsapp" onclick="enviarWhatsapp('${emp.id}')">💬</button>
+                            <button class="btn-sm txt" onclick="copiarLembrete('${emp.id}')">📄</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderizarFinalizados(finalizados) {
+            const container = document.getElementById('listaFinalizados');
+            if (finalizados.length === 0) {
+                container.innerHTML = `
+                    <div class="vazio">
+                        <i>📭</i>
+                        Nenhum pagamento finalizado ainda.
+                    </div>
+                `;
+                return;
+            }
+
+            finalizados.sort((a, b) => {
+                if (!a.dataPagamento) return 1;
+                if (!b.dataPagamento) return -1;
+                return b.dataPagamento.localeCompare(a.dataPagamento);
+            });
+
+            let html = '';
+            for (const emp of finalizados) {
+                const total = calcularTotal(emp.valor, emp.juros);
+                const venc = obterVencimento(emp);
+                html += `
+                    <div class="loan-item">
+                        <div class="loan-info">
+                            <div class="name">${emp.nome}</div>
+                            <div class="meta">
+                                <span>📅 Início: ${formatarData(emp.data)}</span>
+                                <span>⏳ Venc: ${formatarData(venc)}</span>
+                                <span>✅ Pago em: ${emp.dataPagamento ? formatarData(emp.dataPagamento) : '—'}</span>
+                                <span class="tag pago">Pago</span>
+                            </div>
+                        </div>
+                        <div class="loan-total">
+                            ${formatarMoeda(total)}
+                            <div class="sub">total pago</div>
+                        </div>
+                        <div class="loan-actions">
+                            <button class="btn-sm danger" onclick="excluirFinalizado('${emp.id}')">🗑️ Excluir</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  AÇÕES
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function marcarPago(id) {
+            const emp = emprestimos.find(e => e.id == id);
+            if (!emp) return;
+            if (emp.pago) return;
+
+            emp.pago = true;
+            emp.dataPagamento = hoje();
+            salvarDados();
+            renderizar();
+            mostrarToast(`✅ ${emp.nome} — pagamento registrado!`);
+        }
+
+        function enviarWhatsapp(id) {
+            const emp = emprestimos.find(e => e.id == id);
+            if (!emp) return;
+            const total = calcularTotal(emp.valor, emp.juros);
+            const venc = obterVencimento(emp);
+            const msg =
+                `🔔 *LEMBRETE DE PAGAMENTO*\n\n` +
+                `👤 *Devedor:* ${emp.nome}\n` +
+                `💰 *Valor total:* ${formatarMoeda(total)}\n` +
+                `📅 *Vencimento:* ${formatarData(venc)}\n\n` +
+                `─────────────────\n` +
+                `💳 *Dados para pagamento (Pix):*\n` +
+                `🏦 Banco: ${PIX_INFO.banco}\n` +
+                `👤 Nome: ${PIX_INFO.nome}\n` +
+                `🔑 Chave Pix: ${PIX_INFO.chave}\n` +
+                `─────────────────\n\n` +
+                `Por favor, realize o pagamento e me avise. Obrigado!`;
+            const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+            mostrarToast(`💬 Mensagem com Pix enviada para ${emp.nome}`);
+        }
+
+        function copiarLembrete(id) {
+            const emp = emprestimos.find(e => e.id == id);
+            if (!emp) return;
+            const total = calcularTotal(emp.valor, emp.juros);
+            const venc = obterVencimento(emp);
+            const msg =
+                `🔔 LEMBRETE DE PAGAMENTO\n\n` +
+                `👤 Devedor: ${emp.nome}\n` +
+                `💰 Valor total: ${formatarMoeda(total)}\n` +
+                `📅 Vencimento: ${formatarData(venc)}\n\n` +
+                `─────────────────\n` +
+                `💳 Dados para pagamento (Pix):\n` +
+                `🏦 Banco: ${PIX_INFO.banco}\n` +
+                `👤 Nome: ${PIX_INFO.nome}\n` +
+                `🔑 Chave Pix: ${PIX_INFO.chave}\n` +
+                `─────────────────\n\n` +
+                `Por favor, realize o pagamento e me avise. Obrigado!`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(msg).then(() => {
+                    mostrarToast(`📄 Lembrete com Pix copiado para ${emp.nome}`);
+                }).catch(() => {
+                    copiarFallback(msg);
+                });
+            } else {
+                copiarFallback(msg);
+            }
+        }
+
+        function copiarFallback(texto) {
+            const ta = document.createElement('textarea');
+            ta.value = texto;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                mostrarToast('📄 Lembrete com Pix copiado!');
+            } catch {
+                mostrarToast('⚠️ Não foi possível copiar.');
+            }
+            document.body.removeChild(ta);
+        }
+
+        function excluirFinalizado(id) {
+            const index = emprestimos.findIndex(e => e.id == id);
+            if (index === -1) return;
+            if (!emprestimos[index].pago) return;
+            const nome = emprestimos[index].nome;
+            emprestimos.splice(index, 1);
+            salvarDados();
+            renderizar();
+            mostrarToast(`🗑️ Empréstimo de ${nome} removido.`);
+        }
+
+        function limparTodosFinalizados() {
+            const finalizados = emprestimos.filter(e => e.pago);
+            if (finalizados.length === 0) {
+                mostrarToast('⚠️ Nenhum pagamento finalizado para limpar.');
+                return;
+            }
+            if (confirm(`Tem certeza que deseja excluir todos os ${finalizados.length} pagamentos finalizados?`)) {
+                emprestimos = emprestimos.filter(e => !e.pago);
+                salvarDados();
+                renderizar();
+                mostrarToast(`🗑️ Todos os pagamentos finalizados foram removidos.`);
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  TOAST
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let toastTimeout = null;
+
+        function mostrarToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                el.classList.remove('show');
+            }, 3200);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  TABS + ATALHOS (duplos)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function mostrarAba(aba) {
+            const painelAtivos = document.getElementById('painelAtivos');
+            const painelFinalizados = document.getElementById('painelFinalizados');
+            const tabAtivos = document.getElementById('tabAtivos');
+            const tabFinalizados = document.getElementById('tabFinalizados');
+
+            if (aba === 'ativos') {
+                painelAtivos.style.display = 'block';
+                painelFinalizados.style.display = 'none';
+                tabAtivos.classList.add('active');
+                tabFinalizados.classList.remove('active');
+            } else {
+                painelAtivos.style.display = 'none';
+                painelFinalizados.style.display = 'block';
+                tabAtivos.classList.remove('active');
+                tabFinalizados.classList.add('active');
+            }
+            renderizar();
+        }
+
+        document.getElementById('tabAtivos').addEventListener('click', () => mostrarAba('ativos'));
+        document.getElementById('tabFinalizados').addEventListener('click', () => mostrarAba('finalizados'));
+
+        document.getElementById('atalhoFinalizados1').addEventListener('click', () => mostrarAba('finalizados'));
+        document.getElementById('atalhoFinalizados2').addEventListener('click', () => mostrarAba('finalizados'));
+
+        document.getElementById('atalhoVoltar1').addEventListener('click', () => mostrarAba('ativos'));
+        document.getElementById('atalhoVoltar2').addEventListener('click', () => mostrarAba('ativos'));
+
+        document.getElementById('limparTodosFinalizados').addEventListener('click', limparTodosFinalizados);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  FORM
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        document.getElementById('formEmprestimo').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const nome = document.getElementById('inputNome').value.trim();
+            const data = document.getElementById('inputData').value;
+            const vencimento = document.getElementById('inputVencimento').value;
+            const valor = parseFloat(document.getElementById('inputValor').value);
+
+            if (!nome || !data || isNaN(valor) || valor <= 0) {
+                mostrarToast('⚠️ Preencha todos os campos corretamente.');
+                return;
+            }
+
+            // Se vencimento não preenchido, calcular automaticamente
+            let vencFinal = vencimento;
+            if (!vencFinal) {
+                vencFinal = dataVencimentoCalculado(data);
+            }
+
+            const novo = {
+                id: gerarId(),
+                nome: nome,
+                data: data,
+                vencimento: vencFinal,
+                valor: valor,
+                juros: 0.30,
+                pago: false,
+                dataPagamento: null,
+            };
+
+            emprestimos.push(novo);
+            salvarDados();
+            renderizar();
+
+            // Limpar form
+            document.getElementById('inputNome').value = '';
+            document.getElementById('inputValor').value = '';
+            document.getElementById('inputData').value = '';
+            document.getElementById('inputVencimento').value = '';
+
+            mostrarToast(`✅ Empréstimo de ${formatarMoeda(valor)} para ${nome} adicionado!`);
+        });
+
+        // ── Setar data padrão ──
+        document.getElementById('inputData').value = hoje();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  INIT
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        carregarDados();
+        renderizar();
+
+        // Garantir que todos tenham campo vencimento
+        emprestimos = emprestimos.map(e => {
+            if (!e.vencimento) {
+                e.vencimento = dataVencimentoCalculado(e.data);
+            }
+            if (e.juros === undefined) e.juros = 0.30;
+            return e;
+        });
+        salvarDados();
+
+        console.log('💰 Painel de Empréstimos carregado!');
+        console.log(`📊 ${emprestimos.filter(e => !e.pago).length} ativos, ${emprestimos.filter(e => e.pago).length} finalizados.`);
+        console.log('💳 Pix configurado:', PIX_INFO);
+    </script>
+
+</body>
+</html>
