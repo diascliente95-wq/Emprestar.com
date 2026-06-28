@@ -1,4 +1,4 @@
-htt<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
@@ -99,6 +99,26 @@ htt<!DOCTYPE html>
             font-size: 12px;
             color: #94a3b8;
             margin-left: 4px;
+        }
+        .btn-notificacao {
+            background: #dbeafe;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #1e40af;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #bfdbfe;
+        }
+        .btn-notificacao:hover {
+            background: #bfdbfe;
+        }
+        .btn-notificacao.ativado {
+            background: #bbf7d0;
+            border-color: #86efac;
+            color: #166534;
         }
 
         /* ── Tabs ── */
@@ -347,6 +367,28 @@ htt<!DOCTYPE html>
             color: #94a3b8;
         }
 
+        /* Cronômetro */
+        .cronometro {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0b3b5c;
+            background: #f1f5f9;
+            padding: 2px 12px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .cronometro.urgente {
+            background: #fee2e2;
+            color: #991b1b;
+            animation: piscar 1s infinite;
+        }
+        @keyframes piscar {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         .vazio {
             text-align: center;
             color: #94a3b8;
@@ -449,7 +491,7 @@ htt<!DOCTYPE html>
                 font-size: 15px;
                 padding: 4px 14px;
             }
-            .btn-atualizar {
+            .btn-atualizar, .btn-notificacao {
                 font-size: 12px;
                 padding: 4px 12px;
             }
@@ -585,8 +627,11 @@ htt<!DOCTYPE html>
             <h1>💰 Empréstimos <span>· 30%</span></h1>
             <div class="header-right">
                 <div class="relogio" id="relogio">00:00:00</div>
+                <button class="btn-notificacao" id="btnNotificacao" title="Ativar notificações no celular">
+                    🔔 Notif.
+                </button>
                 <button class="btn-atualizar" id="btnAtualizar" title="Verificar atualizações e recarregar">
-                    🔄 Atualizar <span class="versao">v1.3</span>
+                    🔄 Atualizar <span class="versao">v1.4</span>
                 </button>
                 <span class="badge-juros">📈 Juros fixos 30%</span>
             </div>
@@ -694,10 +739,10 @@ htt<!DOCTYPE html>
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  VERSÃO DO APLICATIVO
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const APP_VERSION = '1.3';
+        const APP_VERSION = '1.4';
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  DADOS DO PIX (centralizado)
+        //  DADOS DO PIX
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const PIX_INFO = {
             banco: 'PagSeguro',
@@ -721,19 +766,18 @@ htt<!DOCTYPE html>
             if (raw) {
                 try {
                     emprestimos = JSON.parse(raw);
-                    // Garantir que registros antigos tenham campo vencimento
                     emprestimos = emprestimos.map(e => {
-                        if (!e.vencimento) {
-                            e.vencimento = dataVencimentoCalculado(e.data);
-                        }
+                        if (!e.vencimento) e.vencimento = dataVencimentoCalculado(e.data);
                         if (e.juros === undefined) e.juros = 0.30;
+                        // Inicializar flags de notificação se não existirem
+                        if (e.notified === undefined) e.notified = {};
                         return e;
                     });
                 } catch {
                     emprestimos = [];
                 }
             } else {
-                // Dados de exemplo com vencimento manual
+                // Dados de exemplo
                 const hojeStr = hoje();
                 const vencEx1 = new Date();
                 vencEx1.setDate(vencEx1.getDate() + 30);
@@ -751,6 +795,7 @@ htt<!DOCTYPE html>
                     juros: 0.30,
                     pago: false,
                     dataPagamento: null,
+                    notified: {}
                 }, {
                     id: Date.now() - 50000,
                     nome: 'Carlos Mendes',
@@ -760,6 +805,7 @@ htt<!DOCTYPE html>
                     juros: 0.30,
                     pago: false,
                     dataPagamento: null,
+                    notified: {}
                 }, {
                     id: Date.now() - 200000,
                     nome: 'Mariana Souza',
@@ -769,6 +815,7 @@ htt<!DOCTYPE html>
                     juros: 0.30,
                     pago: true,
                     dataPagamento: new Date(Date.now() - 10 * 86400000).toISOString().split('T')[0],
+                    notified: {}
                 }];
             }
             salvarDados();
@@ -819,6 +866,134 @@ htt<!DOCTYPE html>
             return emp.vencimento || dataVencimentoCalculado(emp.data);
         }
 
+        // ── Calcular tempo restante em milissegundos ──
+        function tempoRestanteMs(vencimentoStr) {
+            const agora = new Date().getTime();
+            const venc = new Date(vencimentoStr + 'T23:59:59').getTime();
+            return Math.max(0, venc - agora);
+        }
+
+        function formatarTempo(ms) {
+            if (ms <= 0) return 'Vencido!';
+            const seg = Math.floor(ms / 1000);
+            const dias = Math.floor(seg / 86400);
+            const horas = Math.floor((seg % 86400) / 3600);
+            const minutos = Math.floor((seg % 3600) / 60);
+            const segundos = seg % 60;
+            if (dias > 0) return `${dias}d ${horas}h ${minutos}m ${segundos}s`;
+            if (horas > 0) return `${horas}h ${minutos}m ${segundos}s`;
+            if (minutos > 0) return `${minutos}m ${segundos}s`;
+            return `${segundos}s`;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  NOTIFICAÇÕES
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let notificacaoPermitida = false;
+
+        function solicitarPermissaoNotificacao() {
+            if (!('Notification' in window)) {
+                mostrarToast('⚠️ Este navegador não suporta notificações.');
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                notificacaoPermitida = true;
+                atualizarBotaoNotificacao();
+                mostrarToast('🔔 Notificações já estão ativas.');
+                return;
+            }
+            if (Notification.permission === 'denied') {
+                mostrarToast('⚠️ Permissão de notificações negada. Ative nas configurações do navegador.');
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    notificacaoPermitida = true;
+                    atualizarBotaoNotificacao();
+                    mostrarToast('🔔 Notificações ativadas!');
+                } else {
+                    mostrarToast('⚠️ Permissão negada.');
+                }
+            });
+        }
+
+        function enviarNotificacao(titulo, corpo, id) {
+            if (!notificacaoPermitida) return;
+            try {
+                const notif = new Notification(titulo, {
+                    body: corpo,
+                    icon: '💰', // emoji como ícone (não funciona em todos)
+                    tag: id || 'emprestimo',
+                    requireInteraction: true,
+                });
+                setTimeout(() => notif.close(), 10000);
+            } catch (e) {
+                console.warn('Erro ao enviar notificação:', e);
+            }
+        }
+
+        function atualizarBotaoNotificacao() {
+            const btn = document.getElementById('btnNotificacao');
+            if (notificacaoPermitida) {
+                btn.textContent = '🔔 Ativo';
+                btn.classList.add('ativado');
+            } else {
+                btn.textContent = '🔔 Ativar';
+                btn.classList.remove('ativado');
+            }
+        }
+
+        // Verificar permissão ao carregar
+        if ('Notification' in window && Notification.permission === 'granted') {
+            notificacaoPermitida = true;
+            atualizarBotaoNotificacao();
+        }
+
+        // ── Verificação periódica de vencimentos para notificar ──
+        function verificarVencimentosParaNotificar() {
+            const agora = new Date();
+            const ativos = emprestimos.filter(e => !e.pago);
+            for (const emp of ativos) {
+                const venc = obterVencimento(emp);
+                const msRestante = tempoRestanteMs(venc);
+                const segRestante = Math.floor(msRestante / 1000);
+                const diasRestante = segRestante / 86400;
+
+                // Limiares: 3 dias, 1 dia, 12 horas, 1 hora
+                const limiares = [
+                    { limite: 3 * 86400, flag: 'notified_3d', msg: 'Faltam 3 dias para o vencimento!' },
+                    { limite: 1 * 86400, flag: 'notified_1d', msg: 'Faltam 24 horas para o vencimento!' },
+                    { limite: 12 * 3600, flag: 'notified_12h', msg: 'Faltam 12 horas para o vencimento!' },
+                    { limite: 1 * 3600, flag: 'notified_1h', msg: 'Falta 1 hora para o vencimento!' },
+                ];
+
+                for (const limiar of limiares) {
+                    if (segRestante <= limiar.limite && segRestante > 0) {
+                        if (!emp.notified[limiar.flag]) {
+                            emp.notified[limiar.flag] = true;
+                            salvarDados();
+                            const titulo = `⏰ Vencimento próximo: ${emp.nome}`;
+                            const corpo = `${limiar.msg} Valor: ${formatarMoeda(calcularTotal(emp.valor, emp.juros))}`;
+                            enviarNotificacao(titulo, corpo, emp.id);
+                            break; // notifica apenas o primeiro limiar atingido (o mais crítico)
+                        }
+                    }
+                }
+
+                // Se já venceu e ainda não notificou
+                if (segRestante <= 0 && !emp.notified['notified_vencido']) {
+                    emp.notified['notified_vencido'] = true;
+                    salvarDados();
+                    const titulo = `❌ Vencido: ${emp.nome}`;
+                    const corpo = `O empréstimo está vencido! Valor: ${formatarMoeda(calcularTotal(emp.valor, emp.juros))}`;
+                    enviarNotificacao(titulo, corpo, emp.id);
+                }
+            }
+        }
+
+        // Verificar a cada 30 segundos
+        setInterval(verificarVencimentosParaNotificar, 30000);
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  RELÓGIO
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -833,7 +1008,7 @@ htt<!DOCTYPE html>
         atualizarRelogio();
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  RENDER
+        //  RENDER (com cronômetro)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function renderizar() {
             const ativos = emprestimos.filter(e => !e.pago);
@@ -870,6 +1045,9 @@ htt<!DOCTYPE html>
                 const venc = obterVencimento(emp);
                 const dias = diasAte(venc);
                 const total = calcularTotal(emp.valor, emp.juros);
+                const msRestante = tempoRestanteMs(venc);
+                const tempoStr = formatarTempo(msRestante);
+                const isUrgente = msRestante <= 86400000 && msRestante > 0; // menos de 1 dia
 
                 let statusData = '';
                 if (dias < 0) {
@@ -890,6 +1068,9 @@ htt<!DOCTYPE html>
                                 ${statusData}
                                 <span class="tag">Valor: ${formatarMoeda(emp.valor)}</span>
                                 <span class="tag juros">+30%: ${formatarMoeda(emp.valor * 0.30)}</span>
+                            </div>
+                            <div class="cronometro ${isUrgente ? 'urgente' : ''}" id="cronometro-${emp.id}">
+                                ⏱️ ${tempoStr}
                             </div>
                         </div>
                         <div class="loan-total">
@@ -953,6 +1134,24 @@ htt<!DOCTYPE html>
             container.innerHTML = html;
         }
 
+        // ── Atualizar cronômetros a cada segundo ──
+        function atualizarCronometros() {
+            const ativos = emprestimos.filter(e => !e.pago);
+            for (const emp of ativos) {
+                const venc = obterVencimento(emp);
+                const msRestante = tempoRestanteMs(venc);
+                const tempoStr = formatarTempo(msRestante);
+                const el = document.getElementById(`cronometro-${emp.id}`);
+                if (el) {
+                    el.textContent = `⏱️ ${tempoStr}`;
+                    // Atualizar classe urgente
+                    const isUrgente = msRestante <= 86400000 && msRestante > 0;
+                    el.classList.toggle('urgente', isUrgente);
+                }
+            }
+        }
+        setInterval(atualizarCronometros, 1000);
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  AÇÕES
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -963,6 +1162,8 @@ htt<!DOCTYPE html>
 
             emp.pago = true;
             emp.dataPagamento = hoje();
+            // Resetar notificações
+            emp.notified = {};
             salvarDados();
             renderizar();
             mostrarToast(`✅ ${emp.nome} — pagamento registrado!`);
@@ -1060,14 +1261,10 @@ htt<!DOCTYPE html>
             }
         }
 
-        // ── FUNÇÃO DE ATUALIZAÇÃO ──
         function atualizarApp() {
-            // Recarrega os dados do localStorage e renderiza
             carregarDados();
             renderizar();
             mostrarToast(`🔄 Aplicativo atualizado! (v${APP_VERSION})`);
-            // Opcional: forçar recarga da página para limpar cache
-            // window.location.reload(); // Descomente se quiser recarga total
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1086,7 +1283,7 @@ htt<!DOCTYPE html>
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  TABS + ATALHOS (duplos)
+        //  TABS + ATALHOS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function mostrarAba(aba) {
             const painelAtivos = document.getElementById('painelAtivos');
@@ -1119,8 +1316,9 @@ htt<!DOCTYPE html>
 
         document.getElementById('limparTodosFinalizados').addEventListener('click', limparTodosFinalizados);
 
-        // ── Evento do botão atualizar ──
+        // ── Eventos header ──
         document.getElementById('btnAtualizar').addEventListener('click', atualizarApp);
+        document.getElementById('btnNotificacao').addEventListener('click', solicitarPermissaoNotificacao);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  FORM
@@ -1152,6 +1350,7 @@ htt<!DOCTYPE html>
                 juros: 0.30,
                 pago: false,
                 dataPagamento: null,
+                notified: {}
             };
 
             emprestimos.push(novo);
@@ -1174,10 +1373,10 @@ htt<!DOCTYPE html>
         carregarDados();
         renderizar();
 
-        // Garantir consistência
         emprestimos = emprestimos.map(e => {
             if (!e.vencimento) e.vencimento = dataVencimentoCalculado(e.data);
             if (e.juros === undefined) e.juros = 0.30;
+            if (!e.notified) e.notified = {};
             return e;
         });
         salvarDados();
