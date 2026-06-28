@@ -73,7 +73,7 @@
             font-size: 14px;
             border: 1px solid #fecaca;
         }
-        .btn-atualizar {
+        .btn-atualizar-header {
             background: #e0e7ff;
             border: none;
             border-radius: 40px;
@@ -88,11 +88,11 @@
             gap: 6px;
             border: 1px solid #c7d2fe;
         }
-        .btn-atualizar:hover {
+        .btn-atualizar-header:hover {
             background: #c7d2fe;
             transform: scale(1.02);
         }
-        .btn-atualizar:active {
+        .btn-atualizar-header:active {
             transform: scale(0.95);
         }
         .versao {
@@ -402,7 +402,7 @@
             opacity: 0.4;
         }
 
-        /* ── Atalhos duplos ── */
+        /* ── Atalhos duplos e botão atualizar ── */
         .atalhos {
             display: flex;
             gap: 14px;
@@ -435,6 +435,14 @@
         }
         .atalho-btn .icon {
             font-size: 22px;
+        }
+        .atalho-btn.atualizar {
+            background: #e0e7ff;
+            border-color: #c7d2fe;
+            color: #3730a3;
+        }
+        .atalho-btn.atualizar:hover {
+            background: #c7d2fe;
         }
 
         /* ── Toast ── */
@@ -491,7 +499,7 @@
                 font-size: 15px;
                 padding: 4px 14px;
             }
-            .btn-atualizar, .btn-notificacao {
+            .btn-atualizar-header, .btn-notificacao {
                 font-size: 12px;
                 padding: 4px 12px;
             }
@@ -509,6 +517,11 @@
             }
             .card {
                 padding: 18px 14px;
+            }
+            .atalho-btn {
+                min-width: 100px;
+                padding: 10px 12px;
+                font-size: 13px;
             }
         }
 
@@ -630,7 +643,7 @@
                 <button class="btn-notificacao" id="btnNotificacao" title="Ativar notificações no celular">
                     🔔 Notif.
                 </button>
-                <button class="btn-atualizar" id="btnAtualizar" title="Verificar atualizações e recarregar">
+                <button class="btn-atualizar-header" id="btnAtualizarHeader" title="Recarregar dados e sincronizar">
                     🔄 Atualizar <span class="versao">v1.4</span>
                 </button>
                 <span class="badge-juros">📈 Juros fixos 30%</span>
@@ -683,13 +696,16 @@
                 <div id="listaAtivos" class="lista-scroll">
                     <!-- renderizado via JS -->
                 </div>
-                <!-- DOIS ATALHOS para a lista de finalizados -->
+                <!-- DOIS ATALHOS + BOTÃO ATUALIZAR -->
                 <div class="atalhos">
                     <button class="atalho-btn" id="atalhoFinalizados1">
                         <span class="icon">📋</span> Ver Finalizados
                     </button>
                     <button class="atalho-btn" id="atalhoFinalizados2">
                         <span class="icon">✅</span> Pagamentos Encerrados
+                    </button>
+                    <button class="atalho-btn atualizar" id="btnAtualizarAtalho1">
+                        <span class="icon">🔄</span> Recarregar dados
                     </button>
                 </div>
                 <!-- Informação do Pix -->
@@ -712,13 +728,16 @@
                 <div id="listaFinalizados" class="lista-scroll">
                     <!-- renderizado via JS -->
                 </div>
-                <!-- DOIS ATALHOS para voltar aos ativos -->
+                <!-- DOIS ATALHOS + BOTÃO ATUALIZAR -->
                 <div class="atalhos">
                     <button class="atalho-btn" id="atalhoVoltar1">
                         <span class="icon">⬅️</span> Voltar aos Ativos
                     </button>
                     <button class="atalho-btn" id="atalhoVoltar2">
                         <span class="icon">📊</span> Empréstimos Ativos
+                    </button>
+                    <button class="atalho-btn atualizar" id="btnAtualizarAtalho2">
+                        <span class="icon">🔄</span> Recarregar dados
                     </button>
                 </div>
                 <!-- Informação do Pix também aqui -->
@@ -769,7 +788,6 @@
                     emprestimos = emprestimos.map(e => {
                         if (!e.vencimento) e.vencimento = dataVencimentoCalculado(e.data);
                         if (e.juros === undefined) e.juros = 0.30;
-                        // Inicializar flags de notificação se não existirem
                         if (e.notified === undefined) e.notified = {};
                         return e;
                     });
@@ -866,7 +884,6 @@
             return emp.vencimento || dataVencimentoCalculado(emp.data);
         }
 
-        // ── Calcular tempo restante em milissegundos ──
         function tempoRestanteMs(vencimentoStr) {
             const agora = new Date().getTime();
             const venc = new Date(vencimentoStr + 'T23:59:59').getTime();
@@ -922,7 +939,7 @@
             try {
                 const notif = new Notification(titulo, {
                     body: corpo,
-                    icon: '💰', // emoji como ícone (não funciona em todos)
+                    icon: '💰',
                     tag: id || 'emprestimo',
                     requireInteraction: true,
                 });
@@ -943,13 +960,11 @@
             }
         }
 
-        // Verificar permissão ao carregar
         if ('Notification' in window && Notification.permission === 'granted') {
             notificacaoPermitida = true;
             atualizarBotaoNotificacao();
         }
 
-        // ── Verificação periódica de vencimentos para notificar ──
         function verificarVencimentosParaNotificar() {
             const agora = new Date();
             const ativos = emprestimos.filter(e => !e.pago);
@@ -957,9 +972,7 @@
                 const venc = obterVencimento(emp);
                 const msRestante = tempoRestanteMs(venc);
                 const segRestante = Math.floor(msRestante / 1000);
-                const diasRestante = segRestante / 86400;
 
-                // Limiares: 3 dias, 1 dia, 12 horas, 1 hora
                 const limiares = [
                     { limite: 3 * 86400, flag: 'notified_3d', msg: 'Faltam 3 dias para o vencimento!' },
                     { limite: 1 * 86400, flag: 'notified_1d', msg: 'Faltam 24 horas para o vencimento!' },
@@ -975,12 +988,11 @@
                             const titulo = `⏰ Vencimento próximo: ${emp.nome}`;
                             const corpo = `${limiar.msg} Valor: ${formatarMoeda(calcularTotal(emp.valor, emp.juros))}`;
                             enviarNotificacao(titulo, corpo, emp.id);
-                            break; // notifica apenas o primeiro limiar atingido (o mais crítico)
+                            break;
                         }
                     }
                 }
 
-                // Se já venceu e ainda não notificou
                 if (segRestante <= 0 && !emp.notified['notified_vencido']) {
                     emp.notified['notified_vencido'] = true;
                     salvarDados();
@@ -991,7 +1003,6 @@
             }
         }
 
-        // Verificar a cada 30 segundos
         setInterval(verificarVencimentosParaNotificar, 30000);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1008,7 +1019,7 @@
         atualizarRelogio();
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  RENDER (com cronômetro)
+        //  RENDER
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function renderizar() {
             const ativos = emprestimos.filter(e => !e.pago);
@@ -1047,7 +1058,7 @@
                 const total = calcularTotal(emp.valor, emp.juros);
                 const msRestante = tempoRestanteMs(venc);
                 const tempoStr = formatarTempo(msRestante);
-                const isUrgente = msRestante <= 86400000 && msRestante > 0; // menos de 1 dia
+                const isUrgente = msRestante <= 86400000 && msRestante > 0;
 
                 let statusData = '';
                 if (dias < 0) {
@@ -1134,7 +1145,6 @@
             container.innerHTML = html;
         }
 
-        // ── Atualizar cronômetros a cada segundo ──
         function atualizarCronometros() {
             const ativos = emprestimos.filter(e => !e.pago);
             for (const emp of ativos) {
@@ -1144,7 +1154,6 @@
                 const el = document.getElementById(`cronometro-${emp.id}`);
                 if (el) {
                     el.textContent = `⏱️ ${tempoStr}`;
-                    // Atualizar classe urgente
                     const isUrgente = msRestante <= 86400000 && msRestante > 0;
                     el.classList.toggle('urgente', isUrgente);
                 }
@@ -1162,7 +1171,6 @@
 
             emp.pago = true;
             emp.dataPagamento = hoje();
-            // Resetar notificações
             emp.notified = {};
             salvarDados();
             renderizar();
@@ -1316,8 +1324,11 @@
 
         document.getElementById('limparTodosFinalizados').addEventListener('click', limparTodosFinalizados);
 
-        // ── Eventos header ──
-        document.getElementById('btnAtualizar').addEventListener('click', atualizarApp);
+        // ── Eventos de atualização ──
+        document.getElementById('btnAtualizarHeader').addEventListener('click', atualizarApp);
+        document.getElementById('btnAtualizarAtalho1').addEventListener('click', atualizarApp);
+        document.getElementById('btnAtualizarAtalho2').addEventListener('click', atualizarApp);
+
         document.getElementById('btnNotificacao').addEventListener('click', solicitarPermissaoNotificacao);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
